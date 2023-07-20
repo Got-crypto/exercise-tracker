@@ -1,7 +1,17 @@
 const express = require('express')
 const app = express()
 const cors = require('cors')
+const mongoose = require('mongoose')
 require('dotenv').config()
+
+const DB_URL = process.env.DATABASE_URL
+
+const options = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}
+
+mongoose.connect(DB_URL, options)
 
 app.use(cors())
 app.use(express.static('public'))
