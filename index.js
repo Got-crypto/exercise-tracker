@@ -52,6 +52,18 @@ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html')
 });
 
+const createLogs = async (data) => {
+  const exercises = await Exercise.find({username: data?.username}).select({description: 1, duration: 1, date: 1}).exec()
+
+  const log = {
+    username: data?.username,
+    count: exercises?.length,
+    log: exercises
+  }
+  
+  await Log.findOneAndUpdate({username: data?.username}, log)
+}
+
 const usersPost = async (req, res) => {
   const username = req.body
   const user = await User.findOne(username)
@@ -93,13 +105,15 @@ app.post('/api/users/:id/exercises', async (req, res) => {
 
     const formData = {id, description, duration: parseInt(duration), newDate, username: user?.username}
 
-    Exercise.create({...formData, id: null})
+    await Exercise.create({...formData, id: null})
+    await createLogs(formData)
     
     return res.json(formData)
   }
   
   const formData = {id, description, duration: parseInt(duration), date, username: user?.username}
-  Exercise.create({...formData, id: null})
+  await Exercise.create({...formData, id: null})
+  await createLogs(formData)
   return res.json(formData)
 })
 
