@@ -60,8 +60,14 @@ const createLogs = async (data) => {
     count: exercises?.length,
     log: exercises
   }
+
+  const userLogExist = !!Object.keys(await Log.find({username: data?.username}) || []).length
   
-  await Log.findOneAndUpdate({username: data?.username}, log)
+  if(userLogExist) {
+    return await Log.findOneAndUpdate({username: data?.username}, log)
+  }
+
+  return Log.create(log)
 }
 
 const usersPost = async (req, res) => {
