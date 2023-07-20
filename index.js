@@ -74,6 +74,35 @@ const usersGet = async (req, res) => {
 
 app.route('/api/users').post(usersPost).get(usersGet)
 
+app.post('/api/users/:id/exercises', async (req, res) => {
+  const {description, duration, date} = req.body
+  const id = req.params.id
+
+  if(id === "") {
+    return res.json({error: "id required"})
+  }
+
+  if(description === "" || duration === "") {
+    return res.json({error: "description and duration are required"})
+  }
+  
+  const user = await User.findById(id)
+
+  if (date === "") {
+    const newDate = new Date().toUTCString()
+
+    const formData = {id, description, duration: parseInt(duration), newDate, username: user?.username}
+
+    Exercise.create({...formData, id: null})
+    
+    return res.json(formData)
+  }
+  
+  const formData = {id, description, duration: parseInt(duration), date, username: user?.username}
+  Exercise.create({...formData, id: null})
+  return res.json(formData)
+})
+
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
 })
