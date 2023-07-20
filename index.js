@@ -107,7 +107,7 @@ app.post('/api/users/:id/exercises', async (req, res) => {
   const user = await User.findById(id)
 
   if (date === "") {
-    const newDate = new Date().toUTCString()
+    const newDate = new Date().toDateString()
 
     const formData = {id, description, duration: parseInt(duration), newDate, username: user?.username}
 
@@ -129,8 +129,6 @@ app.get('/api/users/:_id/logs', async (req, res) => {
   const user = await User.findOne({_id})
 
   const logsForUser = await Log.find({username: user?.username})
-
-  console.log('logsForUser', logsForUser)
 
   return res.json(logsForUser)
 })
