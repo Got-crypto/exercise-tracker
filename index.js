@@ -13,6 +13,35 @@ const options = {
 
 mongoose.connect(DB_URL, options)
 
+const {Schema, model} = mongoose
+
+const exerciseSchema = new Schema({
+  username: String,
+  description: String,
+  duration: Number,
+  date: String
+})
+
+const userSchema = new Schema({
+  username: String
+})
+
+const LogSchema = new Schema({
+  description: String,
+  duration: Number,
+  date: String
+}) 
+
+const logSchema = new Schema({
+  username: String,
+  count: Number,
+  log: [LogSchema]
+})
+
+const Exercise = model('Exercise', exerciseSchema)
+const User = model('User', userSchema)
+const Log = model('Log', logSchema)
+
 app.use(cors())
 app.use(express.static('public'))
 app.get('/', (req, res) => {
