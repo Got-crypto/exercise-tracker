@@ -52,15 +52,27 @@ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html')
 });
 
-app.post('/api/users', async (req, res) => {
+const usersPost = async (req, res) => {
   const username = req.body
+  const user = await User.findOne(username)
+  const usernameExist = !!Object.keys(await User.find(username) || {}).length
+
+  if(usernameExist) {
+    return res.json({username: user?.username, _id: user?._id?.toString()})
+  }
 
   const doc = await User.create(username)
 
   return res.json({username: doc?.username, _id: doc?._id?.toString()})
-})
+}
 
+const usersGet = async (req, res) => {
+  const users = await User.find().select({username: 1, _id: 1}).exec()
 
+  return res.json(users)
+}
+
+app.route('/api/users').post(usersPost).get(usersGet)
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
