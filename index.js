@@ -109,7 +109,7 @@ app.post('/api/users/:id/exercises', async (req, res) => {
   if (date === "") {
     const newDate = new Date().toDateString()
 
-    const formData = {_id: id, description, duration: parseInt(duration), newDate, username: user?.username}
+    const formData = {user: { _id: id, username: user?.username, },  description, duration: parseInt(duration), newDate}
 
     await Exercise.create({...formData, id: null})
     await createLogs(formData)
@@ -117,7 +117,7 @@ app.post('/api/users/:id/exercises', async (req, res) => {
     return res.json(formData)
   }
   
-  const formData = {_id: id, description, duration: parseInt(duration), date, username: user?.username}
+  const formData = {user: { _id: id, username: user?.username, }, description, duration: parseInt(duration), date}
   await Exercise.create({...formData, id: null})
   await createLogs(formData)
   return res.json(formData)
@@ -166,15 +166,15 @@ app.get('/api/users/:_id/logs', async (req, res) => {
     const data = {
       description: log?.description,
       duration: log?.duration,
-      date: log?.duration
+      date: log?.date
     }
 
     fixedLogs.push(data)
   }
 
   const data = {
-    _id: user._id,
-    username: user?.username,
+    user: { _id: user?._id, username: user?.username, },
+    count: fixedLogs.length,
     log: fixedLogs
   }
 
