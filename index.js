@@ -53,7 +53,9 @@ app.get('/', (req, res) => {
 });
 
 const createLogs = async (data) => {
-  const exercises = await Exercise.find({username: data?.username}).select({description: 1, duration: 1, date: 1}).exec()
+  const exercises = await Exercise.find({username: data?.username}).select({_id: 0}).exec()
+
+  console.log('exercises', exercises)
 
   const log = {
     username: data?.username,
@@ -114,7 +116,7 @@ app.post('/api/users/:id/exercises', async (req, res) => {
     await Exercise.create({...formData, id: null})
     await createLogs(formData)
     
-    return res.json(formData)
+    return res.json({user: formData})
   }
   
   const formData = {id, description, duration: parseInt(duration), date, username: user?.username}
@@ -160,13 +162,9 @@ app.get('/api/users/:_id/logs', async (req, res) => {
 
   const logs = returnLogs(logsForUser.log)
 
-  const data = {
-    ...logsForUser._doc,
-    count: logs.length,
-    log: logs
-  }
+  console.log('logs', logs)
 
-  return res.json(data)
+  return res.json({user: logs})
 })
 
 const listener = app.listen(process.env.PORT || 3000, () => {
