@@ -125,12 +125,48 @@ app.post('/api/users/:id/exercises', async (req, res) => {
 
 app.get('/api/users/:_id/logs', async (req, res) => {
   const _id = req.params._id
+  const from = req.query.from
+  const to = req.query.to
+  const limit = req.query.limit
 
   const user = await User.findOne({_id})
 
-  const logsForUser = await Log.find({username: user?.username})
+  const logsForUser = await Log.findOne({username: user?.username})
 
-  return res.json(logsForUser)
+  const returnLogs = (logs) => {
+    const dateFrom = new Date(from)
+    const dateTo = new Date(to)
+
+    const datesFrom = from ? logs.filter((log) => new Date(log.date) >= dateFrom) : []
+    const datesTo = to ? logs.filter((log) => new Date(log.date) <= dateTo) : []
+
+    const filteredLogs = from || to ? logs.filter((log, index) => datesFrom[index]?.date === log.date || datesTo[index]?.date === log.date) : logs
+
+    const limitedLogs = () => {
+      let logs = []
+      for(let log in filteredLogs) {
+        if(parseInt(log) + 1 <= parseInt(limit)) {
+          logs.push(filteredLogs[log])
+        } else {
+          break
+        }
+      }
+
+      return logs
+    }
+
+    return limit ? limitedLogs() : filteredLogs
+  }
+
+  const logs = returnLogs(logsForUser.log)
+
+  const data = {
+    ...logsForUser._doc,
+    count: logs.length,
+    log: logs
+  }
+
+  return res.json(data)
 })
 
 const listener = app.listen(process.env.PORT || 3000, () => {
