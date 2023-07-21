@@ -109,17 +109,17 @@ app.post('/api/users/:id/exercises', async (req, res) => {
   if (date === "") {
     const newDate = new Date().toDateString()
 
-    const formData = {user: { _id: id, username: user?.username, },  description, duration: parseInt(duration), newDate}
+    const formData = {user: { _id: id, username: user?.username, },  description, duration: parseInt(duration), date: newDate}
 
-    await Exercise.create({...formData, id: null})
-    await createLogs(formData)
+    await Exercise.create({...formData, username: formData.user.username})
+    await createLogs({...formData, username: formData.user.username})
     
     return res.json(formData)
   }
   
   const formData = {user: { _id: id, username: user?.username, }, description, duration: parseInt(duration), date}
-  await Exercise.create({...formData, id: null})
-  await createLogs(formData)
+  await Exercise.create({...formData, username: formData.user.username})
+  await createLogs({...formData, username: formData.user.username})
   return res.json(formData)
 })
 
