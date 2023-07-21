@@ -55,8 +55,6 @@ app.get('/', (req, res) => {
 const createLogs = async (data) => {
   const exercises = await Exercise.find({username: data?.username}).select({_id: 0}).exec()
 
-  console.log('exercises', exercises)
-
   const log = {
     username: data?.username,
     count: exercises?.length,
@@ -111,15 +109,15 @@ app.post('/api/users/:id/exercises', async (req, res) => {
   if (date === "") {
     const newDate = new Date().toDateString()
 
-    const formData = {id, description, duration: parseInt(duration), newDate, username: user?.username}
+    const formData = {_id: id, description, duration: parseInt(duration), newDate, username: user?.username}
 
     await Exercise.create({...formData, id: null})
     await createLogs(formData)
     
-    return res.json({user: formData})
+    return res.json(formData)
   }
   
-  const formData = {id, description, duration: parseInt(duration), date, username: user?.username}
+  const formData = {_id: id, description, duration: parseInt(duration), date, username: user?.username}
   await Exercise.create({...formData, id: null})
   await createLogs(formData)
   return res.json(formData)
@@ -160,11 +158,27 @@ app.get('/api/users/:_id/logs', async (req, res) => {
     return limit ? limitedLogs() : filteredLogs
   }
 
-  const logs = returnLogs(logsForUser.log)
+  const logs = returnLogs(logsForUser?.log)
 
-  console.log('logs', logs)
+  let fixedLogs = []
 
-  return res.json({user: logs})
+  for(let log of logs) {
+    const data = {
+      description: log?.description,
+      duration: log?.duration,
+      date: log?.duration
+    }
+
+    fixedLogs.push(data)
+  }
+
+  const data = {
+    _id: user._id,
+    username: user?.username,
+    log: fixedLogs
+  }
+
+  return res.json(data)
 })
 
 const listener = app.listen(process.env.PORT || 3000, () => {
