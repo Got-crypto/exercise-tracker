@@ -32,43 +32,13 @@ const userSchema = new Schema({
   username: String
 })
 
-const LogSchema = new Schema({
-  description: String,
-  duration: Number,
-  date: String
-}) 
-
-const logSchema = new Schema({
-  username: String,
-  count: Number,
-  log: [LogSchema]
-})
 
 const Exercise = model('Exercise', exerciseSchema)
 const User = model('User', userSchema)
-const Log = model('Log', logSchema)
 
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html')
 });
-
-const createLogs = async (data) => {
-  const exercises = await Exercise.find({username: data?.username}).select({_id: 0}).exec()
-
-  const log = {
-    username: data?.username,
-    count: exercises?.length,
-    log: exercises
-  }
-
-  const userLogExist = !!Object.keys(await Log.find({username: data?.username}) || []).length
-  
-  if(userLogExist) {
-    return await Log.findOneAndUpdate({username: data?.username}, log)
-  }
-
-  return Log.create(log)
-}
 
 const usersPost = async (req, res) => {
   const username = req.body
@@ -106,59 +76,58 @@ app.post('/api/users/:id/exercises', async (req, res) => {
   
   const user = await User.findById(id)
 
+  const fd = {
+    _id: id,
+    username: user?.username,
+    description,
+    duration: parseInt(duration),
+  }
+
   if (date === "") {
     const newDate = new Date().toDateString()
 
-    const formData = {user: { _id: id, username: user?.username, },  description, duration: parseInt(duration), date: newDate}
+    const formData = {user: {...fd, date: newDate}}
 
-    await Exercise.create({...formData, username: formData.user.username})
-    await createLogs({...formData, username: formData.user.username})
-    
+    await Exercise.create({...formData.user})
+
     return res.json(formData)
   }
   
-  const formData = {user: { _id: id, username: user?.username, }, description, duration: parseInt(duration), date}
-  await Exercise.create({...formData, username: formData.user.username})
-  await createLogs({...formData, username: formData.user.username})
+  const dateString = new Date(date).toDateString()
+
+  const formData = {user: {...fd, date: dateString}}
+
+  await Exercise.create({...formData.user})
+  
   return res.json(formData)
 })
 
+const getUserLogs = async (username, from, to, limit) => {
+  console.log('from.toDateString(', from.toDateString())
+  return await Exercise.aggregate([
+    {$match: { username }},
+    {$match: { date: {$gte: from?.toDateString()} }}
+  ])
+}
+
 app.get('/api/users/:_id/logs', async (req, res) => {
+  const fromQuery = req.query.from
+  const toQuery = req.query.to
+
   const _id = req.params._id
-  const from = req.query.from
-  const to = req.query.to
+  const from = fromQuery && new Date(fromQuery)
+  const to = toQuery && new Date(toQuery)
   const limit = req.query.limit
 
   const user = await User.findOne({_id})
 
-  const logsForUser = await Log.findOne({username: user?.username})
+  const logsForUser = await getUserLogs(user.username, from, to, limit)
 
-  const returnLogs = (logs) => {
-    const dateFrom = new Date(from)
-    const dateTo = new Date(to)
+  console.log('logsForUser', logsForUser)
 
-    const datesFrom = from ? logs.filter((log) => new Date(log.date) >= dateFrom) : []
-    const datesTo = to ? logs.filter((log) => new Date(log.date) <= dateTo) : []
+  
 
-    const filteredLogs = from || to ? logs.filter((log, index) => datesFrom[index]?.date === log.date || datesTo[index]?.date === log.date) : logs
-
-    const limitedLogs = () => {
-      let logs = []
-      for(let log in filteredLogs) {
-        if(parseInt(log) + 1 <= parseInt(limit)) {
-          logs.push(filteredLogs[log])
-        } else {
-          break
-        }
-      }
-
-      return logs
-    }
-
-    return limit ? limitedLogs() : filteredLogs
-  }
-
-  const logs = returnLogs(logsForUser?.log)
+  const logs = logsForUser?.[0]?.log || []
 
   let fixedLogs = []
 
@@ -171,6 +140,8 @@ app.get('/api/users/:_id/logs', async (req, res) => {
 
     fixedLogs.push(data)
   }
+
+  console.log('fixedLogs', fixedLogs)
 
   const data = {
     user: { _id: user?._id, username: user?.username, },
