@@ -77,37 +77,53 @@ app.post('/api/users/:id/exercises', async (req, res) => {
   const user = await User.findById(id)
 
   const fd = {
-    _id: id,
     username: user?.username,
     description,
     duration: parseInt(duration),
   }
 
   if (date === "") {
-    const newDate = new Date().toDateString()
+    const newDate = new Date()
 
-    const formData = {user: {...fd, date: newDate}}
+    const dateString = `${newDate.getFullYear()}-${newDate.getMonth() + 1}-${newDate.getDate()}`
 
-    await Exercise.create({...formData.user})
+    const formData = {...fd, date: dateString}
 
-    return res.json(formData)
+    await Exercise.create(formData)
+
+    return res.json({_id: user._id, ...formData, date: newDate.toDateString()})
   }
-  
-  const dateString = new Date(date).toDateString()
 
-  const formData = {user: {...fd, date: dateString}}
+  const formData = {...fd, date}
 
-  await Exercise.create({...formData.user})
+  await Exercise.create(formData)
   
-  return res.json(formData)
+  return res.json({_id: user._id, ...formData, date: new Date(date).toDateString()})
 })
 
 const getUserLogs = async (username, from, to, limit) => {
-  console.log('from.toDateString(', from.toDateString())
-  return await Exercise.aggregate([
-    {$match: { username }},
-    {$match: { date: {$gte: from?.toDateString()} }}
-  ])
+
+  const filterQuery = from && to ? {
+    username,
+    date: {
+      $gte: from,
+      $lte: to
+    }
+  } : from ? {
+    username,
+    date: {
+      $gte: from,
+    }
+  } : to ? {
+    username,
+    date: {
+      $lte: to
+    }
+  } : {
+    username
+  }
+
+  return await Exercise.find(filterQuery).limit(limit && parseInt(limit))
 }
 
 app.get('/api/users/:_id/logs', async (req, res) => {
@@ -115,19 +131,15 @@ app.get('/api/users/:_id/logs', async (req, res) => {
   const toQuery = req.query.to
 
   const _id = req.params._id
-  const from = fromQuery && new Date(fromQuery)
-  const to = toQuery && new Date(toQuery)
+  const from = fromQuery
+  const to = toQuery
   const limit = req.query.limit
 
   const user = await User.findOne({_id})
 
-  const logsForUser = await getUserLogs(user.username, from, to, limit)
+  const logsForUser = await getUserLogs(user?.username, from, to, limit)
 
-  console.log('logsForUser', logsForUser)
-
-  
-
-  const logs = logsForUser?.[0]?.log || []
+  const logs = logsForUser
 
   let fixedLogs = []
 
@@ -135,16 +147,14 @@ app.get('/api/users/:_id/logs', async (req, res) => {
     const data = {
       description: log?.description,
       duration: log?.duration,
-      date: log?.date
+      date: new Date(log?.date).toDateString()
     }
 
     fixedLogs.push(data)
   }
 
-  console.log('fixedLogs', fixedLogs)
-
   const data = {
-    user: { _id: user?._id, username: user?.username, },
+    _id: user?._id, username: user?.username,
     count: fixedLogs.length,
     log: fixedLogs
   }
