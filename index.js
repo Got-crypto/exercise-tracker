@@ -84,7 +84,7 @@ app.post('/api/users/:id/exercises', async (req, res) => {
     duration: parseInt(duration),
   }
 
-  if (date === "") {
+  if (date === "" || !date) {
     const newDate = new Date()
 
     const dateString = `${newDate.getFullYear()}-${newDate.getMonth() + 1}-${newDate.getDate()}`
