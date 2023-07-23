@@ -66,6 +66,8 @@ app.post('/api/users/:id/exercises', async (req, res) => {
   const {description, duration, date} = req.body
   const id = req.params.id
 
+  console.log('req.body', req.body)
+
   if(id === "") {
     return res.json({error: "id required"})
   }
